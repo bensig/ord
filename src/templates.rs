@@ -139,7 +139,7 @@ mod tests {
       <a href=/rare.txt>rare.txt</a>
       <form action=/search method=get>
         <input type=text .*>
-        <input type=submit value=Search>
+        <input type=submit value='&#9906'>
       </form>
     </nav>
   </header>
