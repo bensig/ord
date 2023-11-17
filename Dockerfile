@@ -7,6 +7,8 @@ WORKDIR /ordinals
 # Install latest ord release from github 
 RUN wget -qO- https://raw.githubusercontent.com/ordinals/ord/master/install.sh | bash -s -- --to /ordinals
 # Set entrypoint
+RUN echo "Checking vars and paths"
+RUN ls /ordinals
 RUN echo $DATA_DIR
 RUN echo $RPC_HOST
 RUN echo $RPC_PORT
