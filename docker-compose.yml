@@ -7,8 +7,8 @@ services:
       context: .
       dockerfile: Dockerfile
     volumes:
-      - /ordinals:/ordinals:rw
-      - /home/bitcoin/.bitcoin:/root/.bitcoin
+      - ~/ordinals:/ordinals:rw
+      - ~/.bitcoin:/root/.bitcoin
     environment:
       RPC_HOST: "127.0.0.1"
       RPC_PORT: "8332"
