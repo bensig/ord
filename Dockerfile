@@ -5,7 +5,7 @@ RUN apt-get update && apt-get upgrade -y
 # use the mounted ordinals directory from the host
 WORKDIR /ordinals
 # Install latest ord release from github 
-RUN wget -O - https://raw.githubusercontent.com/ordinals/ord/master/install.sh | bash
+RUN wget -qO- https://raw.githubusercontent.com/ordinals/ord/master/install.sh | bash -s -- --to /ordinals
 # Set entrypoint
 RUN echo $DATA_DIR
 RUN echo $RPC_HOST
