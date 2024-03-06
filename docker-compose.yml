@@ -12,15 +12,16 @@ services:
       - ~/.local/share/ord:/ordinals:rw # Linux
 #      - /roaming/ord:/ordinals:rw # Windows
 #      - ~/Library/Application Support/ord:/ordinals:rw # Mac OSX
-      - ~/.bitcoin:/root/.bitcoin # this may vary depending on your bitcoin.conf
+      - ${BITCOIN_DATA_DIR}:/root/.bitcoin # this may vary depending on your bitcoin.conf
     environment:
       RPC_HOST: "127.0.0.1"
-      RPC_PORT: "8332"
+      RPC_PORT: "${BITCOIN_RPC_PORT}"
       COOKIE_FILE: "/root/.bitcoin/.cookie"
       DATA_DIR: "/ordinals/index-data"
       HTTP_PORT: "8080"
       RUST_LOG: "INFO"
       RUST_BACKTRACE: "FULL"
+      USE_SIGNET: ${USE_SIGNET:-false}
     network_mode: host
     expose:
       - "8080"

@@ -9,5 +9,13 @@ RUN curl -Ls -o install.sh https://raw.githubusercontent.com/ordinals/ord/master
 # Make executable
 RUN chmod +x install.sh
 RUN ./install.sh
-# Set entrypoint to ord with env vars set in docker-compose.yml
-ENTRYPOINT ~/bin/ord --data-dir $DATA_DIR --rpc-url $RPC_HOST:$RPC_PORT --cookie-file $COOKIE_FILE server --http --http-port $HTTP_PORT
+
+ENTRYPOINT if [ "$USE_SIGNET" = "true" ]; then \
+             echo "USE_SIGNET is set to $USE_SIGNET"; \
+             echo "Running ord in signet mode"; \
+             exec ~/bin/ord -s --index-runes-pre-alpha-i-agree-to-get-rekt --index-sats --data-dir $DATA_DIR --rpc-url $RPC_HOST:$RPC_PORT --cookie-file $COOKIE_FILE server --http --http-port $HTTP_PORT --csp-origin * --enable-json-api; \
+           else \
+             echo "USE_SIGNET is set to $USE_SIGNET"; \
+             echo "Running ord in mainnet mode"; \
+             exec ~/bin/ord --index-runes-pre-alpha-i-agree-to-get-rekt --index-sats --data-dir $DATA_DIR --rpc-url $RPC_HOST:$RPC_PORT --cookie-file $COOKIE_FILE server --http --http-port $HTTP_PORT --csp-origin * --enable-json-api;\
+           fi
