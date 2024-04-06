@@ -20,6 +20,47 @@ pub(crate) struct InscriptionHtml {
   pub(crate) timestamp: DateTime<Utc>,
 }
 
+#[derive(Debug, PartialEq, Serialize, Deserialize)]
+pub struct InscriptionExtendedJson {
+  pub address: Option<String>,
+  pub children: Vec<InscriptionId>,
+  pub content_length: Option<usize>,
+  pub content_type: Option<String>,
+  pub genesis_fee: u64,
+  pub genesis_height: u32,
+  pub inscription_id: InscriptionId,
+  pub inscription_number: i32,
+  pub next: Option<InscriptionId>,
+  pub output_value: Option<u64>,
+  pub parents: Option<InscriptionId>,
+  pub previous: Option<InscriptionId>,
+  pub rune: Option<SpacedRune>,
+  pub sat: Option<Sat>,
+  pub satpoint: SatPoint,
+  pub timestamp: i64,
+  pub charms: u16,
+  pub charms_extended: Vec<CharmsExtendedJson>,
+  pub sat_rarity: Option<Rarity>,
+  pub metadata: Option<Value>,
+  pub metadata_hex: Option<String>,
+  pub metaprotocol: Option<String>,
+  pub content_encoding: Option<String>,
+  pub content: Option<String>,
+  pub recursive: bool,
+  pub recursive_refs: Option<Vec<String>>,
+  pub tx_id: String,
+  pub block_hash: Option<String>,
+  pub satpoint_outpoint: String,
+  pub satpoint_offset: u64,
+  pub genesis_address: Option<String>,
+}
+
+#[derive(Debug, PartialEq, Serialize, Deserialize)]
+pub struct CharmsExtendedJson {
+  pub title: String,
+  pub icon: String,
+}
+
 impl PageContent for InscriptionHtml {
   fn title(&self) -> String {
     format!("Inscription {}", self.number)

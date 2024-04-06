@@ -5,14 +5,15 @@ use {
     error::{OptionExt, ServerError, ServerResult},
   },
   super::*,
-  crate::templates::{
+  crate::
+    templates::{
     BlockHtml, BlocksHtml, ChildrenHtml, ClockSvg, CollectionsHtml, HomeHtml, InputHtml,
     InscriptionHtml, InscriptionsBlockHtml, InscriptionsHtml, OutputHtml, PageContent, PageHtml,
     ParentsHtml, PreviewAudioHtml, PreviewCodeHtml, PreviewFontHtml, PreviewImageHtml,
     PreviewMarkdownHtml, PreviewModelHtml, PreviewPdfHtml, PreviewTextHtml, PreviewUnknownHtml,
     PreviewVideoHtml, RangeHtml, RareTxt, RuneBalancesHtml, RuneHtml, RunesHtml, SatHtml,
     TransactionHtml,
-  },
+    },
   axum::{
     body,
     extract::{Extension, Json, Path, Query},
@@ -1583,186 +1584,6 @@ impl Server {
         .page(server_config)
         .into_response()
       })
-    })
-  }
-
-  async fn inscription_extended(
-    Extension(server_config): Extension<Arc<ServerConfig>>,
-    Extension(index): Extension<Arc<Index>>,
-    Path(DeserializeFromStr(query)): Path<DeserializeFromStr<query::Inscription>>,
-    AcceptJson(accept_json): AcceptJson,
-  ) -> ServerResult<Response> {
-    let info =
-      Index::inscription_info(&index, query)?.ok_or_not_found(|| format!("inscription {query}"))?;
-
-    let entry = info.entry;
-    let inscription_id = entry.id;
-    let inscription = info.inscription;
-    let satpoint = info.satpoint;
-    let output = info.output;
-    let previous = info.previous;
-    let next = info.next;
-    let children = info.children;
-    let rune = info.rune;
-    let parent = info.parent;
-
-    let mut charms = entry.charms;
-
-    if satpoint.outpoint == OutPoint::null() {
-      Charm::Lost.set(&mut charms);
-    }
-
-    let mut charms_extended = vec![];
-    if charms != 0 {
-      for charm in Charm::ALL {
-        if charm.is_set(charms) {
-          charms_extended.push(CharmsExtendedJson {
-            title: charm.title().to_string(),
-            icon: charm.icon().to_string(),
-          });
-        }
-      }
-    }
-
-    let entry_sat = entry.sat;
-    let mut sat_rarity: Option<Rarity> = None;
-    if let Some(entry_sat) = entry_sat {
-      sat_rarity = Some(entry_sat.rarity());
-    }
-
-    let content_encoding = inscription.content_encoding.as_ref();
-    let mut content_encoding_str: Option<String> = None;
-    if let Some(content_encoding) = content_encoding {
-      if let Ok(content_encoding) = str::from_utf8(content_encoding) {
-        content_encoding_str = Some(content_encoding.to_string());
-      }
-    }
-
-    let content_type = inscription.content_type().map(|s| s.to_string());
-    let body = inscription.clone().into_body();
-    let mut content: Option<String> = None;
-    if let Some(content_type) = content_type {
-      if content_type == "text/plain"
-        || content_type == "text/plain;charset=utf-8"
-        || content_type == "application/json"
-        || content_type == "application/json;charset=utf-8"
-        || content_type == "text/markdown"
-        || content_type == "text/markdown;charset=utf-8"
-      {
-        if let Some(body) = body {
-          let body = String::from_utf8_lossy(&body);
-          content = Some(body.to_string());
-        }
-      }
-    }
-
-    let metadata = inscription.metadata.clone();
-    let mut metadata_hex: Option<String> = None;
-    if let Some(metadata) = metadata {
-      if metadata.len() > 0 {
-        metadata_hex = Some(hex::encode(metadata));
-      }
-    }
-
-    // This is a hack to get recursive refs working
-    // Probably a better way to do this
-    let mut recursive_refs: Option<Vec<String>> = None;
-    let body = inscription.clone().into_body();
-    if let Some(body) = body {
-      let body_cow = String::from_utf8_lossy(&body);
-      let body_str = body_cow.to_string();
-      let re = Regex::new(r"\/content\/([a-fA-F0-9]{64}i\d+)").unwrap();
-      re.captures_iter(&body_str).for_each(|cap| {
-        if recursive_refs.is_none() {
-          recursive_refs = Some(Vec::new());
-        }
-        recursive_refs.as_mut().unwrap().push(cap[1].to_string());
-      });
-    }
-
-    let tx_id = inscription_id.txid.to_string();
-    let mut block_hash: Option<String> = None;
-    if let Some(hash) = index.block_hash(Some(entry.height)).unwrap_or(None) {
-      block_hash = Some(hash.to_string());
-    }
-
-    let mut genesis_address: Option<String> = None;
-    if let Some(tx) = index.get_transaction(inscription_id.txid).unwrap_or(None) {
-      tx.output.iter().for_each(|output| {
-        if let Some(address) = server_config
-          .chain
-          .address_from_script(&output.script_pubkey)
-          .ok()
-        {
-          genesis_address = Some(address.to_string());
-        }
-      });
-    }
-
-    Ok(if accept_json {
-      Json(InscriptionExtendedJson {
-        inscription_id,
-        children,
-        inscription_number: entry.inscription_number,
-        genesis_height: entry.height,
-        parent,
-        genesis_fee: entry.fee,
-        output_value: output.as_ref().map(|o| o.value),
-        address: output
-          .as_ref()
-          .and_then(|o| {
-            server_config
-              .chain
-              .address_from_script(&o.script_pubkey)
-              .ok()
-          })
-          .map(|address| address.to_string()),
-        sat: entry.sat,
-        satpoint,
-        content_type: inscription.content_type().map(|s| s.to_string()),
-        content_length: inscription.content_length(),
-        timestamp: timestamp(entry.timestamp).timestamp(),
-        previous,
-        next,
-        rune,
-        charms,
-        charms_extended,
-        sat_rarity,
-        metadata: inscription.metadata(),
-        metadata_hex,
-        metaprotocol: inscription.metaprotocol().map(|s| s.to_string()),
-        content_encoding: content_encoding_str,
-        content,
-        recursive: recursive_refs != None,
-        recursive_refs,
-        tx_id,
-        block_hash,
-        satpoint_outpoint: satpoint.outpoint.to_string(),
-        satpoint_offset: satpoint.offset,
-        genesis_address,
-      })
-      .into_response()
-    } else {
-      InscriptionHtml {
-        chain: server_config.chain,
-        charms,
-        children,
-        fee: entry.fee,
-        height: entry.height,
-        inscription,
-        id: inscription_id,
-        number: entry.inscription_number,
-        next,
-        output,
-        parent,
-        previous,
-        rune,
-        sat: entry.sat,
-        satpoint,
-        timestamp: timestamp(entry.timestamp),
-      }
-      .page(server_config)
-      .into_response()
     })
   }
 
