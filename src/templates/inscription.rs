@@ -32,7 +32,7 @@ pub struct InscriptionExtendedJson {
   pub inscription_number: i32,
   pub next: Option<InscriptionId>,
   pub output_value: Option<u64>,
-  pub parents: Option<InscriptionId>,
+  pub parents: Vec<InscriptionId>,
   pub previous: Option<InscriptionId>,
   pub rune: Option<SpacedRune>,
   pub sat: Option<Sat>,
