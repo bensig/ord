@@ -1,0 +1,12 @@
+services:
+  ord:
+    image: ordinals/ord
+    network_mode: host
+    env_file:
+      - ./.env
+    volumes:
+      - ./ord.yaml:/ord.yaml
+      - $HOME/.local/share/ord/signet:/root/.local/share/ord/signet
+    ports:
+      - "8080:8080"
+
