@@ -36,6 +36,9 @@ use {
   },
 };
 
+use axum::extract::Json;
+use serde_json::json; // Add this import for creating JSON objects
+
 mod error;
 
 enum BlockQuery {
@@ -64,6 +67,13 @@ enum SpawnConfig {
 #[derive(Deserialize)]
 struct Search {
   query: String,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+struct ReverseResult {
+  inscription_id: u64,
+  inscription_number: u64,
+  // Add more fields as needed
 }
 
 #[derive(RustEmbed)]
@@ -174,6 +184,7 @@ impl Server {
           "/reverse_content/:inscription_number",
           get(Self::reverse_content),
         )
+        .route("/api/reverse", get(reverse_json)) // Add this line for the new endpoint
         .layer(Extension(index))
         .layer(Extension(page_config))
         .layer(Extension(Arc::new(config)))
@@ -738,6 +749,41 @@ impl Server {
     )
   }
   // BEGIN REVERSE CONTENT - added by Levan
+
+  // This function takes the inscription number and the index and returns the content in JSON format
+  fn reverse_content_as_json(
+    inscription_number: u64,
+    index: Arc<Index>,
+  ) -> ServerResult<serde_json::Value> {
+    // Your existing code for content reversal
+    // ...
+
+    // Instead of returning Vec<u8>, construct a JSON object with the required data
+    let data = json!({
+        "inscription_id": inscription_id,
+        "number": entry.number,
+        "genesis_fee": entry.fee,
+        "genesis_height": entry.height,
+        "timestamp": timestamp(entry.timestamp),
+        // Add other fields you want to include in the JSON response
+    });
+
+    Ok(data)
+  }
+
+  async fn reverse_json(
+    Path(inscription_number): Path<u64>,
+    Extension(index): Extension<Arc<Index>>,
+  ) -> ServerResult<Json<serde_json::Value>> {
+    match reverse_content_as_json(inscription_number, index) {
+      Ok(data) => Ok(Json(data)),
+      Err(_) => Err((
+        StatusCode::INTERNAL_SERVER_ERROR,
+        "Failed to retrieve data".into(),
+      )),
+    }
+  }
+
   async fn reverse_content(
     Extension(index): Extension<Arc<Index>>,
     Extension(config): Extension<Arc<Config>>,
